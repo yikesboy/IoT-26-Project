@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres@sha256:cf70b3d7aeb0f399ba29e94ce081380ccade1f4c38e203309068a30f49548417 # 18.2-alpine3.22
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: --locale=C --encoding=UTF8
+    ports:
+      - 2345:5432
+    volumes:
+      - postgres:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U postgres -d postgres -c 'SELECT 1'"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+  ollama:
+    image: ollama/ollama:${GPU_FLAVOR}
+    ports:
+      - 11434:11434
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    volumes:
+      - ollama:/root/.ollama
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    ports:
+      - 5678:5678
+    volumes:
+      - n8n:/home/node/.n8n
+  dex:
+    image: dexidp/dex@sha256:43a8f45c0bbcd2f5e7e941c15f31b7d92fa041bd25e4c00124f021c8da25d21e
+    ports:
+      - 5556:5556
+    volumes:
+      - ./config.dex.yaml:/etc/dex/config.yaml
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+
+volumes:
+  postgres:
+  ollama:
+  n8n:
