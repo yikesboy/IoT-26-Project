@@ -6,10 +6,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: --locale=C --encoding=UTF8
     ports:
-      - 2345:5432
+      - 5432:5432
     volumes:
       - postgres:/var/lib/postgresql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/better-auth.sql:/docker-entrypoint-initdb.d/better-auth.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "psql -U postgres -d postgres -c 'SELECT 1'"]
       interval: 5s

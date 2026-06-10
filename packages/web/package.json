@@ -1,0 +1,48 @@
+{
+  "name": "@iot-26-project/web",
+  "version": "1.0.0",
+  "author": "IoT-26-Project (https://github.com/yikesboy/IoT-26-Project)",
+  "contributors": [
+    "Lukas Jordan <yikesboy@users.noreply.github.com>",
+    "Sophie Guertler <sophie@guertler.net>"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "routes:generate": "node tsr.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "better-auth": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "kysely-postgres-js": "catalog:",
+    "lucide-react": "catalog:",
+    "postgres": "catalog:",
+    "pretty-bytes": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-is": "catalog:",
+    "recharts": "catalog:",
+    "shadcn": "catalog:",
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@iot-26-project/tsconfig": "workspace:^",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "nitro": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

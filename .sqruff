@@ -1,0 +1,34 @@
+[sqruff]
+dialect = postgres
+rules = all
+exclude_rules = RF04,LT08
+warn_unused_ignores = True
+max_line_length = 140
+
+[sqruff:indentation]
+indent_unit = space
+tab_space_size = 2
+indented_joins = True
+indented_ctes = True
+
+[sqruff:dialect:postgres]
+pg_trgm = true
+pgvector = true
+
+[sqruff:rules:capitalisation.types]
+extended_capitalisation_policy = upper
+
+[sqruff:layout:type:column_constraint_segment]
+spacing_before = align
+align_within = create_table_statement
+
+[sqruff:layout:type:data_type]
+spacing_before = align
+align_within = create_table_statement
+
+[sqruff:layout:type:alias_expression]
+spacing_before = align
+align_within = select_clause
+
+[sqruff:layout:type:join_on_condition]
+keyword_line_position = leading
