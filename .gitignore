@@ -1,4 +1,7 @@
 /.direnv
+/.corepack
+/.nix-bin
+/.pnpm-home
 /target
 
 node_modules
