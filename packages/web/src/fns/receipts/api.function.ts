@@ -6,4 +6,4 @@ import { listReceipts } from "./api.server";
 export const listReceiptsFn = createServerFn({ method: "GET" })
   .inputValidator(ListReceiptsParams)
   .middleware([authMiddleware])
-  .handler(async ({ context }) => listReceipts(context.session.user.id));
+  .handler(async ({ context }) => listReceipts(context.user.id));

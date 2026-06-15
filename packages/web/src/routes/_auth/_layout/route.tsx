@@ -24,7 +24,6 @@ import {
   PanelLeftCloseIcon,
   PanelRightCloseIcon,
   PiggyBankIcon,
-  ReceiptTextIcon,
   UserIcon,
 } from "lucide-react";
 
@@ -35,9 +34,9 @@ export const Route = createFileRoute("/_auth/_layout")({
 function RouteComponent() {
   return (
     <TooltipProvider>
-      <SidebarProvider>
+      <SidebarProvider className="h-svh min-h-0 overflow-hidden">
         <AppSidebar />
-        <main className="grow min-w-0">
+        <main className="h-svh min-h-0 grow min-w-0 overflow-hidden">
           <Outlet />
         </main>
       </SidebarProvider>
@@ -70,14 +69,6 @@ function AppSidebar() {
                 <Link to={"/"}>
                   <ChartColumnIcon />
                   <span>Dashboard</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to={"/receipts"}>
-                  <ReceiptTextIcon />
-                  <span>Receipts</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

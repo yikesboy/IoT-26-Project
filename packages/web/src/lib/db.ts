@@ -1,10 +1,10 @@
 import postgres from "postgres";
 import { z } from "zod";
 
-const rawSql = postgres(
-  process.env["DATABASE_URL"] ?? "postgresql://postgres:postgres@localhost:5432/postgres",
-  {},
-);
+export const dbURI =
+  process.env["DATABASE_URL"] ?? "postgresql://postgres:postgres@localhost:5432/postgres";
+
+const rawSql = postgres(dbURI, {});
 
 function zodSql(...args: Parameters<typeof rawSql>) {
   const query = rawSql(...args);
