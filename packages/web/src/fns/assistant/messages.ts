@@ -27,6 +27,14 @@ export function latestAssistantMessage(messages: MessageLike[] | undefined) {
     .find((message) => contentToString(message.content).length > 0);
 }
 
+export function toolCallNames(messages: MessageLike[] | undefined) {
+  return (messages ?? []).flatMap((message) =>
+    (message.tool_calls ?? [])
+      .map((toolCall) => toolCall.name)
+      .filter((name) => name !== undefined),
+  );
+}
+
 export function modelDurationFromMetadata(message: MessageLike | undefined) {
   const metadata = message?.response_metadata;
   const totalDuration = metadata?.["total_duration"];
@@ -36,10 +44,33 @@ export function modelDurationFromMetadata(message: MessageLike | undefined) {
   return null;
 }
 
+export function ollamaMetricsFromMetadata(message: MessageLike | undefined) {
+  const metadata = message?.response_metadata;
+  if (!metadata) return null;
+
+  return {
+    totalDurationMs: durationToMs(metadata["total_duration"]),
+    loadDurationMs: durationToMs(metadata["load_duration"]),
+    promptEvalCount: nullableNumber(metadata["prompt_eval_count"]),
+    promptEvalDurationMs: durationToMs(metadata["prompt_eval_duration"]),
+    evalCount: nullableNumber(metadata["eval_count"]),
+    evalDurationMs: durationToMs(metadata["eval_duration"]),
+    memory: null,
+  };
+}
+
 export function errorMessage(error: unknown) {
   if (error instanceof Error) {
     const cause = error.cause instanceof Error ? ` Cause: ${error.cause.message}` : "";
     return `${error.message}${cause}`;
   }
   return String(error);
+}
+
+function durationToMs(value: unknown) {
+  return typeof value === "number" ? Math.round(value / 1_000_000) : null;
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" ? value : null;
 }

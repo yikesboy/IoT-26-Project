@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   FinanceSummaryInput,
   ListFilesInput,
-  ListMetricsInput,
   SendAgentMessageInput,
   SetMonthlyBudgetInput,
   UploadFilesInput,
@@ -11,7 +10,6 @@ import {
 import {
   listFiles,
   listFinanceSummary,
-  listMetrics,
   sendAgentMessage,
   setMonthlyBudget,
   uploadFiles,
@@ -21,7 +19,7 @@ export const sendAgentMessageFn = createServerFn({ method: "POST" })
   .inputValidator(SendAgentMessageInput)
   .middleware([authMiddleware])
   .handler(async ({ context, data }) =>
-    sendAgentMessage(context.user.id, data.threadId, data.message, data.month),
+    sendAgentMessage(context.user.id, data.threadId, data.message, data.month, data.history),
   );
 
 export const uploadFilesFn = createServerFn({ method: "POST" })
@@ -33,11 +31,6 @@ export const listFilesFn = createServerFn({ method: "GET" })
   .inputValidator(ListFilesInput)
   .middleware([authMiddleware])
   .handler(async ({ context, data }) => listFiles(context.user.id, data.threadId));
-
-export const listMetricsFn = createServerFn({ method: "GET" })
-  .inputValidator(ListMetricsInput)
-  .middleware([authMiddleware])
-  .handler(async ({ context }) => listMetrics(context.user.id));
 
 export const listFinanceSummaryFn = createServerFn({ method: "GET" })
   .inputValidator(FinanceSummaryInput)

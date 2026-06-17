@@ -1,4 +1,5 @@
 import type { StoredTransaction } from "@/agent/tools";
+import type { SendAgentMessageInput } from "./api";
 import type { UploadedFile } from "@/lib/finance-schemas";
 import { formatSignedCurrency } from "@/lib/money";
 
@@ -48,4 +49,19 @@ export function formatFileContext(files: UploadedFile[]) {
     .map((file) => `- ${file.filename} (id: ${file.id}, type: ${file.mimeType})`)
     .join("\n");
   return `Files available in this chat:\n${fileList}\nUse these files only when the user explicitly asks about an uploaded file, receipt, invoice, statement, or CSV. For general spending, budget, or savings analysis, use stored transactions first.`;
+}
+
+export function formatChatHistory(history: SendAgentMessageInput["history"]) {
+  const recentHistory = history
+    .slice(-8)
+    .map((message) => `${message.role}: ${message.content.slice(0, 1200)}`)
+    .join("\n\n");
+
+  if (!recentHistory) return "";
+
+  return [
+    "Recent chat context:",
+    recentHistory,
+    "Use this only to understand follow-up references. Prior assistant text is not evidence that a tool ran.",
+  ].join("\n");
 }

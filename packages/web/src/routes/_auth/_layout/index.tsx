@@ -1,13 +1,25 @@
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  Input,
+} from "@/components/ui";
 import {
   SendAgentMessageOutput as SendAgentMessageOutputSchema,
   type FinanceSummaryOutput,
   type ListFilesOutput,
-  type ListMetricsOutput,
+  type PerformanceMetric,
 } from "@/fns/assistant/api";
 import {
   listFinanceSummaryFn,
-  listMetricsFn,
   sendAgentMessageFn,
   setMonthlyBudgetFn,
   uploadFilesFn,
@@ -15,6 +27,9 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import {
   BarChart3Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  GaugeIcon,
   Loader2Icon,
   PaperclipIcon,
   PiggyBankIcon,
@@ -22,7 +37,7 @@ import {
   SendIcon,
 } from "lucide-react";
 import prettyBytes from "pretty-bytes";
-import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { currentLocalMonth } from "@/lib/date";
@@ -37,12 +52,14 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   file?: ListFilesOutput["files"][number];
+  metric?: PerformanceMetric | null;
 };
 
 const acceptedFileTypes =
   ".csv,.pdf,.png,.jpg,.jpeg,.txt,text/csv,text/plain,application/pdf,image/png,image/jpeg";
 
 function RouteComponent() {
+  const initialBudgetMonth = currentLocalMonth();
   const [threadId] = useState(() => crypto.randomUUID());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -56,14 +73,14 @@ function RouteComponent() {
   const [summary, setSummary] = useState<FinanceSummaryOutput>({
     chartData: [],
     transactionCount: 0,
-    month: currentLocalMonth(),
+    month: initialBudgetMonth,
     monthlyBudget: null,
     monthlySpending: 0,
     remainingBudget: null,
   });
-  const [budgetMonth, setBudgetMonth] = useState(currentLocalMonth);
+  const [budgetMonth, setBudgetMonth] = useState(initialBudgetMonth);
+  const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(initialBudgetMonth);
   const [budgetAmount, setBudgetAmount] = useState("");
-  const [metrics, setMetrics] = useState<ListMetricsOutput["metrics"]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
@@ -74,19 +91,15 @@ function RouteComponent() {
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   async function refreshData() {
-    const [summaryResult, metricResult] = await Promise.all([
-      listFinanceSummaryFn({ data: { month: budgetMonth } }),
-      listMetricsFn({ data: {} }),
-    ]);
+    const summaryResult = await listFinanceSummaryFn({ data: { month: selectedBudgetMonth } });
     setSummary(summaryResult);
-    setMetrics(metricResult.metrics);
   }
 
   useEffect(() => {
     void refreshData().catch((err: Error) => {
       setError(`Failed to load assistant data: ${err.message}`);
     });
-  }, [budgetMonth]);
+  }, [selectedBudgetMonth]);
 
   useEffect(() => {
     const scrollContainer = chatScrollRef.current;
@@ -106,6 +119,14 @@ function RouteComponent() {
   async function submitMessage(message: string) {
     setError(null);
     setIsSending(true);
+    const history = messages
+      .filter((item) => item.role === "user" || item.role === "assistant")
+      .slice(-10)
+      .map((item) => ({
+        role: item.role,
+        content: item.content,
+      }));
+
     setMessages((current) => [
       ...current,
       { id: crypto.randomUUID(), role: "user", content: message },
@@ -114,7 +135,7 @@ function RouteComponent() {
     try {
       const response = SendAgentMessageOutputSchema.parse(
         await sendAgentMessageFn({
-          data: { threadId, message, month: budgetMonth },
+          data: { threadId, message, month: selectedBudgetMonth, history },
         }),
       );
       setMessages((current) => [
@@ -123,6 +144,7 @@ function RouteComponent() {
           id: crypto.randomUUID(),
           role: "assistant",
           content: response.response || "I could not produce a response.",
+          metric: response.metric,
         },
       ]);
       await refreshData();
@@ -179,7 +201,15 @@ function RouteComponent() {
     setStoringFileId(file.id);
     try {
       await submitMessage(
-        `Store uploaded file as a transaction. File id: ${file.id}. File name: ${file.filename}.`,
+        [
+          "Tool required: store uploaded file as one transaction.",
+          `fileId=${file.id}`,
+          `filename=${file.filename}`,
+          "The user has already authorized saving this file as a transaction.",
+          "First call extract_file_text with this fileId.",
+          "If extraction returns a readable receipt or invoice, call list_categories and then save_transactions with exactly one transaction using the grand total.",
+          "Do not ask for confirmation. Do not describe extracted text or saved transactions unless the corresponding tool returned that result.",
+        ].join(" "),
       );
     } finally {
       setStoringFileId(null);
@@ -208,12 +238,7 @@ function RouteComponent() {
 
   async function saveBudget() {
     const amount = Number(budgetAmount);
-    if (
-      !/^\d{4}-\d{2}$/.test(budgetMonth) ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      isSavingBudget
-    ) {
+    if (!Number.isFinite(amount) || amount <= 0 || isSavingBudget) {
       return;
     }
 
@@ -222,7 +247,7 @@ function RouteComponent() {
     try {
       await setMonthlyBudgetFn({
         data: {
-          month: budgetMonth,
+          month: selectedBudgetMonth,
           amount,
         },
       });
@@ -235,8 +260,20 @@ function RouteComponent() {
     }
   }
 
-  const latestMetric = metrics[0];
   const chartData = useMemo(() => summary.chartData.slice(0, 8), [summary.chartData]);
+  const hasValidBudgetMonth = isBudgetMonth(budgetMonth);
+  const canSaveBudget = hasValidBudgetMonth && Number(budgetAmount) > 0 && !isSavingBudget;
+
+  function setBudgetMonthInput(month: string) {
+    setBudgetMonth(month);
+    if (isBudgetMonth(month)) setSelectedBudgetMonth(month);
+  }
+
+  function moveBudgetMonth(offset: number) {
+    const month = shiftBudgetMonth(selectedBudgetMonth, offset);
+    setBudgetMonth(month);
+    setSelectedBudgetMonth(month);
+  }
 
   return (
     <div className="h-full min-h-0 overflow-hidden grid grid-cols-[minmax(0,1fr)_22rem] bg-background">
@@ -317,6 +354,11 @@ function RouteComponent() {
                     </Button>
                   </div>
                 ) : null}
+                {message.role === "assistant" && message.metric ? (
+                  <div className="mt-3 flex justify-end">
+                    <MetricDialog metric={message.metric} />
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}
@@ -392,12 +434,36 @@ function RouteComponent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.25rem] gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => moveBudgetMonth(-1)}
+                title="Previous month"
+              >
+                <ChevronLeftIcon className="size-4" />
+              </Button>
               <Input
                 type="month"
                 value={budgetMonth}
-                onChange={(event) => setBudgetMonth(event.currentTarget.value)}
+                aria-invalid={!hasValidBudgetMonth}
+                onChange={(event) => setBudgetMonthInput(event.currentTarget.value)}
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => moveBudgetMonth(1)}
+                title="Next month"
+              >
+                <ChevronRightIcon className="size-4" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+              <div className="text-xs text-muted-foreground self-center">
+                Viewing {selectedBudgetMonth}
+              </div>
               <Input
                 type="number"
                 min="0"
@@ -416,7 +482,7 @@ function RouteComponent() {
             <Button
               type="button"
               className="w-full"
-              disabled={isSavingBudget || Number(budgetAmount) <= 0}
+              disabled={!canSaveBudget}
               onClick={() => void saveBudget()}
             >
               {isSavingBudget ? (
@@ -473,36 +539,167 @@ function RouteComponent() {
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Performance</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {latestMetric ? (
-              <>
-                <MetricRow label="Latency" value={`${latestMetric.totalDurationMs} ms`} />
-                <MetricRow label="Tool overhead" value={`${latestMetric.toolDurationMs ?? 0} ms`} />
-                <MetricRow label="Tool calls" value={latestMetric.toolInvocationCount} />
-                <MetricRow label="Memory" value={prettyBytes(latestMetric.rssBytes ?? 0)} />
-              </>
-            ) : (
-              <p className="text-muted-foreground">No interactions measured yet.</p>
-            )}
-          </CardContent>
-        </Card>
       </aside>
     </div>
   );
 }
 
-function MetricRow({ label, value }: { label: string; value: string | number }) {
+function MetricDialog({ metric }: { metric: PerformanceMetric }) {
+  const structuredToolCalls = getStructuredToolCalls(metric);
+
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm" variant="outline">
+          <GaugeIcon className="size-4" />
+          Metrics
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[70vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <GaugeIcon className="size-4" />
+            Response Metrics
+          </DialogTitle>
+          <DialogDescription>
+            Runtime, resource usage, tool timings, and Ollama response statistics for this answer.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-3 gap-2">
+            <MetricStat label="Latency" value={`${metric.totalDurationMs} ms`} />
+            <MetricStat label="Model" value={formatNullableMs(metric.modelDurationMs)} />
+            <MetricStat label="Tools" value={metric.toolInvocationCount} />
+          </div>
+
+          <MetricSection title="Runtime" columns={2}>
+            <MetricRow label="Tool overhead" value={formatNullableMs(metric.toolDurationMs)} />
+            <MetricRow label="CPU user" value={formatNullableMicros(metric.cpuUserMicros)} />
+            <MetricRow label="CPU system" value={formatNullableMicros(metric.cpuSystemMicros)} />
+            <MetricRow label="RSS" value={formatNullableBytes(metric.rssBytes)} />
+            <MetricRow label="Heap" value={formatNullableBytes(metric.heapUsedBytes)} />
+          </MetricSection>
+
+          <MetricSection title="Ollama" columns={2}>
+            {metric.ollama ? (
+              <>
+                <MetricRow label="Total" value={formatNullableMs(metric.ollama.totalDurationMs)} />
+                <MetricRow label="Load" value={formatNullableMs(metric.ollama.loadDurationMs)} />
+                <MetricRow
+                  label="Prompt tokens"
+                  value={metric.ollama.promptEvalCount ?? "Not reported"}
+                />
+                <MetricRow
+                  label="Prompt eval"
+                  value={formatNullableMs(metric.ollama.promptEvalDurationMs)}
+                />
+                <MetricRow
+                  label="Output tokens"
+                  value={metric.ollama.evalCount ?? "Not reported"}
+                />
+                <MetricRow
+                  label="Output eval"
+                  value={formatNullableMs(metric.ollama.evalDurationMs)}
+                />
+                <MetricRow
+                  label="Model memory"
+                  value={formatNullableBytes(metric.ollama.memory?.sizeBytes ?? null)}
+                />
+                <MetricRow
+                  label="VRAM"
+                  value={formatNullableBytes(metric.ollama.memory?.sizeVramBytes ?? null)}
+                />
+                <MetricRow
+                  label="Context"
+                  value={metric.ollama.memory?.contextLength ?? "Not reported"}
+                />
+                <MetricRow label="Loaded model" value={metric.ollama.memory?.model ?? "Unknown"} />
+              </>
+            ) : (
+              <p className="text-muted-foreground">No Ollama metrics reported for this response.</p>
+            )}
+          </MetricSection>
+
+          <MetricSection title="Tools">
+            {metric.toolCalls.length > 0 ? (
+              <>
+                {metric.toolCalls.map((toolCall, index) => (
+                  <MetricRow
+                    key={`${toolCall.name}-${index}`}
+                    label={toolCall.name}
+                    value={`${toolCall.durationMs} ms`}
+                  />
+                ))}
+              </>
+            ) : (
+              <p className="text-muted-foreground">No tools were invoked.</p>
+            )}
+            <MetricRow
+              label="Structured calls"
+              value={structuredToolCalls.length > 0 ? structuredToolCalls.join(", ") : "None"}
+            />
+          </MetricSection>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MetricStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md border bg-muted/40 px-3 py-1.5">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="truncate font-semibold">{value}</div>
     </div>
   );
+}
+
+function MetricSection({
+  title,
+  children,
+  columns = 1,
+}: {
+  title: string;
+  children: ReactNode;
+  columns?: 1 | 2;
+}) {
+  return (
+    <section className="rounded-md border">
+      <div className="border-b bg-muted/40 px-3 py-1.5 font-medium">{title}</div>
+      <div className={columns === 2 ? "grid grid-cols-2 gap-x-4 px-3" : "divide-y px-3"}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function MetricRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-1.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="min-w-0 text-right font-medium [overflow-wrap:anywhere]">{value}</span>
+    </div>
+  );
+}
+
+function getStructuredToolCalls(metric: PerformanceMetric) {
+  const value = metric.metadata["modelToolCalls"];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function formatNullableMs(value: number | null) {
+  return value === null ? "Not reported" : `${value} ms`;
+}
+
+function formatNullableMicros(value: number | null) {
+  return value === null ? "Not reported" : `${value} us`;
+}
+
+function formatNullableBytes(value: number | null) {
+  return value === null ? "Not reported" : prettyBytes(value);
 }
 
 async function fileToBase64(file: File) {
@@ -518,4 +715,18 @@ async function fileToBase64(file: File) {
     reader.addEventListener("error", () => reject(reader.error));
     reader.readAsDataURL(file);
   });
+}
+
+function isBudgetMonth(month: string) {
+  return /^\d{4}-\d{2}$/.test(month);
+}
+
+function shiftBudgetMonth(month: string, offset: number) {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) return currentLocalMonth();
+
+  const year = Number(match[1]);
+  const monthNumber = Number(match[2]);
+  const date = new Date(year, monthNumber - 1 + offset, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }

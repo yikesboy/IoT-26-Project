@@ -69,7 +69,8 @@ export const listUploadedFilesTool = tool(
     }),
   {
     name: "list_uploaded_files",
-    description: "List files uploaded by the current authenticated user.",
+    description:
+      "List files uploaded by the current authenticated user in the current chat. Use this only for requests about uploaded files, receipts, invoices, statements, CSVs, or when file content is needed.",
     schema: emptyToolSchema,
   },
 );
@@ -82,7 +83,8 @@ export const extractFileText = tool(
     }),
   {
     name: "extract_file_text",
-    description: "Extract readable text from an owned uploaded CSV, text, PDF, or image file.",
+    description:
+      "Extract readable text from an owned uploaded CSV, text, PDF, or image file in the current chat. For images this performs OCR. Always call this tool before claiming that receipt/invoice text was extracted or before asking the user to manually provide receipt or invoice amounts. Use this before analyzing or saving a receipt, invoice, statement, or CSV. If extracted text is not a receipt/invoice/finance document or is unreadable, explain that it cannot be stored as a transaction instead of inventing one.",
     schema: extractFileTextSchema,
   },
 );

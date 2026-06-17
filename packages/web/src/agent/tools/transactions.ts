@@ -10,7 +10,9 @@ export const transactionSchema = z.object({
   id: z.string().default(() => crypto.randomUUID()),
   name: z
     .string()
-    .describe("Merchant, payer, or short transaction label. For receipts use the vendor name."),
+    .describe(
+      "Vendor, merchant, sender, payer, or payee name when available. For receipts use the printed vendor/merchant name. Do not use category labels such as Groceries, Dining, Transport, or Shopping unless no counterparty can be identified.",
+    ),
   amount: z
     .number()
     .transform((amount) => Math.abs(amount))
@@ -45,18 +47,12 @@ export const storedTransactionSchema = transactionSchema.extend({
   modelProvidedId: z.string().optional(),
 });
 
-export const transactionsSchema = z.preprocess(
-  (value) => {
-    if (Array.isArray(value)) return { transactions: value };
-    return value;
-  },
-  z.object({
-    transactions: z
-      .array(transactionSchema)
-      .min(1)
-      .describe("Array of structured transactions to persist."),
-  }),
-);
+export const transactionsSchema = z.object({
+  transactions: z
+    .array(transactionSchema)
+    .min(1)
+    .describe("Array of structured transactions to persist."),
+});
 
 export type StoredTransaction = z.infer<typeof storedTransactionSchema>;
 
@@ -74,10 +70,11 @@ const listTransactionsSchema = z.preprocess(
 
 export async function executeSaveTransactions(
   userId: string,
-  input: z.infer<typeof transactionsSchema>,
+  input: z.input<typeof transactionsSchema>,
 ) {
+  const parsedInput = transactionsSchema.parse(input);
   const categories = await getCategories(userId);
-  const transactions = collapseReceiptLineItems(input.transactions);
+  const transactions = collapseReceiptLineItems(parsedInput.transactions);
   const savedTransactions = await Promise.all(
     transactions.map(async (transaction) => {
       const transactionId = crypto.randomUUID();
@@ -127,7 +124,7 @@ export const saveTransaction = tool(
   {
     name: "save_transactions",
     description:
-      "Save one or more categorized personal finance transactions. For receipts and invoices, save exactly one transaction using the grand total / amount due / paid total; do not save each line item as a separate transaction. Before calling this from a receipt or invoice, first use extract_file_text and convert the extracted content into transaction objects. Input must be { transactions: [...] } or a transaction array; never pass plain text.",
+      "Save one or more categorized personal finance transactions. The transaction name should be the vendor, merchant, sender, payer, or payee when available; keep category labels in categoryName, not name. For receipts and invoices, save exactly one transaction using the grand total / amount due / paid total; do not save each line item as a separate transaction. Before calling this from a receipt or invoice, first use extract_file_text and convert the extracted content into transaction objects. Input must be an object with a transactions array; never pass plain text or a raw array. Only tell the user a transaction was saved after this tool returns a saved result.",
     schema: transactionsSchema,
   },
 );
@@ -144,7 +141,7 @@ export const listTransactions = tool(
   {
     name: "list_transactions",
     description:
-      "Retrieve stored transactions for the current authenticated user. Use this before analyzing expenses, monthly spending, budgets, or savings.",
+      "Retrieve saved personal finance transactions for the current authenticated user. Use this for transaction lists, spending analysis, budget checks, savings recommendations, and any question that depends on stored transaction history. Pass month in YYYY-MM format for ordinary monthly questions using the selected budget month from context; omit month only when the user asks for all months.",
     schema: listTransactionsSchema,
   },
 );

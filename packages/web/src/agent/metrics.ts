@@ -1,9 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-
-export type ToolMetric = {
-  name: string;
-  durationMs: number;
-};
+import type { ToolMetric } from "@/lib/finance-schemas";
 
 const storage = new AsyncLocalStorage<ToolMetric[]>();
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { jsonValueSchema } from "@/lib/finance-schemas";
+import {
+  jsonValueSchema,
+  type OllamaMetric,
+  type PerformanceMetric,
+  type ToolMetric,
+} from "@/lib/finance-schemas";
 import { insertPerformanceMetric } from "@/lib/performance";
 import { errorMessage } from "./messages";
 
@@ -14,10 +19,12 @@ export async function recordAssistantMetric(input: {
   toolInvocationCount: number;
   cpu: NodeJS.CpuUsage;
   memory: NodeJS.MemoryUsage;
+  toolCalls: ToolMetric[];
+  ollama: OllamaMetric | null;
   metadata: Record<string, z.infer<typeof jsonValueSchema>>;
-}) {
+}): Promise<PerformanceMetric | null> {
   try {
-    await insertPerformanceMetric({
+    return await insertPerformanceMetric({
       userId: input.userId,
       threadId: input.threadId,
       promptChars: input.message.length,
@@ -30,9 +37,12 @@ export async function recordAssistantMetric(input: {
       cpuSystemMicros: input.cpu.system,
       rssBytes: input.memory.rss,
       heapUsedBytes: input.memory.heapUsed,
+      toolCalls: input.toolCalls,
+      ollama: input.ollama,
       metadata: input.metadata,
     });
   } catch (error) {
     console.error(`Failed to insert performance metric: ${errorMessage(error)}`);
+    return null;
   }
 }
