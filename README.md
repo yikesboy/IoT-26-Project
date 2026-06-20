@@ -27,7 +27,7 @@ just dev up
 ## Pull Ollama Model
 
 ```sh
-just ollama pull qwen3:8b
+just ollama pull qwen3.5:4b
 ```
 
 ## Start UI
