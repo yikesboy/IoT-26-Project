@@ -30,6 +30,29 @@ export const SendAgentMessageOutput = z.object({
   metric: performanceMetricSchema.nullable(),
 });
 
+export const AgentStreamEvent = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("response_start") }),
+  z.object({ type: z.literal("token"), content: z.string() }),
+  z.object({
+    type: z.literal("tool_start"),
+    id: z.string(),
+    name: z.string(),
+    input: z.unknown(),
+  }),
+  z.object({
+    type: z.literal("tool_end"),
+    id: z.string(),
+    status: z.enum(["finished", "error"]),
+    error: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("done"),
+    response: z.string(),
+    metric: performanceMetricSchema.nullable(),
+  }),
+  z.object({ type: z.literal("error"), message: z.string() }),
+]);
+
 export const UploadFilesInput = z.object({
   threadId: z.string().min(1),
   files: z.array(uploadFileInputSchema).min(1).max(5),
@@ -82,6 +105,7 @@ export const SetMonthlyBudgetOutput = z.object({
 
 export type SendAgentMessageInput = z.infer<typeof SendAgentMessageInput>;
 export type SendAgentMessageOutput = z.infer<typeof SendAgentMessageOutput>;
+export type AgentStreamEvent = z.infer<typeof AgentStreamEvent>;
 export type UploadFilesInput = z.infer<typeof UploadFilesInput>;
 export type UploadFilesOutput = z.infer<typeof UploadFilesOutput>;
 export type ListFilesOutput = z.infer<typeof ListFilesOutput>;
