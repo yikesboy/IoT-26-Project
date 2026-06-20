@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "routes:generate": "node tsr.mjs"
+    "routes:generate": "node tsr.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fontsource-variable/geist": "catalog:",
@@ -55,6 +56,7 @@
     "nitro": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
