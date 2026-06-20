@@ -21,9 +21,6 @@ services:
     image: ollama/ollama:${GPU_FLAVOR}
     ports:
       - 11434:11434
-    devices:
-      - /dev/kfd:/dev/kfd
-      - /dev/dri:/dev/dri
     volumes:
       - ollama:/root/.ollama
   dex:

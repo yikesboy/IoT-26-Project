@@ -6,7 +6,7 @@ _default:
     @just --list -u
 
 dev *args:
-    docker compose -f compose.dev.yaml {{ args }}
+    docker compose {{ args }}
 
 ollama *args:
     docker compose -f compose.dev.yaml exec ollama ollama {{ args }}

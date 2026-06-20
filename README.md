@@ -2,7 +2,21 @@
 
 ## Run services
 
-Copy `.env.example` to `.env` and adjust if needed.
+Copy `.env.example` to `.env`, then select the configuration for your GPU.
+
+For NVIDIA GPUs:
+
+```env
+GPU_FLAVOR=latest
+COMPOSE_FILE=compose.dev.yaml:compose.dev.nvidia.yaml
+```
+
+For AMD GPUs:
+
+```env
+GPU_FLAVOR=rocm
+COMPOSE_FILE=compose.dev.yaml:compose.dev.rocm.yaml
+```
 
 ```sh
 just dev up
