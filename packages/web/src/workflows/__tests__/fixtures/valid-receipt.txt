@@ -1,0 +1,12 @@
+FRESH MARKET
+42 River Street
+2026-05-14 18:42
+
+Apples                 3.49
+Bread                  2.79
+Milk                   1.89
+
+SUBTOTAL               8.17
+TAX                    0.65
+TOTAL EUR              8.82
+VISA **** 4242         8.82

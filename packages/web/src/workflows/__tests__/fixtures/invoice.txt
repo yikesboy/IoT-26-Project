@@ -1,0 +1,9 @@
+NORTHSTAR ENERGY LTD
+Invoice number: NS-2026-0419
+Invoice date: 2026-04-30
+Payment due: 2026-05-15
+
+Electricity supply April 2026
+Net amount             84.03 EUR
+VAT 19%                15.97 EUR
+AMOUNT DUE            100.00 EUR

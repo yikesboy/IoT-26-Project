@@ -1,0 +1,6 @@
+CITY TRANSIT
+Ticket issued: 2026-06-10
+Source reference: upload-receipt-duplicate-001
+
+DAY PASS               7.50 EUR
+TOTAL                  7.50 EUR
