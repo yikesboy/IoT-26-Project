@@ -14,6 +14,12 @@ ollama *args:
 psql:
     docker compose -f compose.dev.yaml exec -it postgres psql -U postgres
 
+db-reset:
+    docker compose -f compose.dev.yaml stop postgres
+    docker compose -f compose.dev.yaml rm -f postgres
+    docker volume rm iot-26-project_postgres || docker volume rm IoT-26-Project_postgres || true
+    docker compose -f compose.dev.yaml up -d postgres
+
 lint: lint-ts lint-sql
 
 lint-ts:
