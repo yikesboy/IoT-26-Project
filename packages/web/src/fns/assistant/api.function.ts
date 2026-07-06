@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
   FinanceSummaryInput,
   ListFilesInput,
+  McpStatusOutput,
   SendAgentMessageInput,
   SetMonthlyBudgetInput,
   UploadFilesInput,
@@ -10,6 +11,7 @@ import {
 import {
   listFiles,
   listFinanceSummary,
+  listMcpStatus,
   sendAgentMessage,
   setMonthlyBudget,
   uploadFiles,
@@ -41,3 +43,7 @@ export const setMonthlyBudgetFn = createServerFn({ method: "POST" })
   .inputValidator(SetMonthlyBudgetInput)
   .middleware([authMiddleware])
   .handler(async ({ context, data }) => setMonthlyBudget(context.user.id, data));
+
+export const listMcpStatusFn = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async () => McpStatusOutput.parse(await listMcpStatus()));

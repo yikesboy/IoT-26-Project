@@ -80,6 +80,28 @@ export const SetMonthlyBudgetOutput = z.object({
   monthlyBudget: z.number(),
 });
 
+export const McpStatusOutput = z.object({
+  enabled: z.boolean(),
+  servers: z.array(
+    z.object({
+      name: z.string(),
+      command: z.string(),
+      args: z.array(z.string()),
+      cwd: z.string(),
+      connected: z.boolean(),
+      error: z.string().nullable(),
+      tools: z.array(
+        z.object({
+          name: z.string(),
+          agentName: z.string(),
+          description: z.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+  restartRequiredForChanges: z.literal(true),
+});
+
 export type SendAgentMessageInput = z.infer<typeof SendAgentMessageInput>;
 export type SendAgentMessageOutput = z.infer<typeof SendAgentMessageOutput>;
 export type UploadFilesInput = z.infer<typeof UploadFilesInput>;
@@ -88,3 +110,4 @@ export type ListFilesOutput = z.infer<typeof ListFilesOutput>;
 export type PerformanceMetric = PerformanceMetricType;
 export type FinanceSummaryOutput = z.infer<typeof FinanceSummaryOutput>;
 export type SetMonthlyBudgetOutput = z.infer<typeof SetMonthlyBudgetOutput>;
+export type McpStatusOutput = z.infer<typeof McpStatusOutput>;
