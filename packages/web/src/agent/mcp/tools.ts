@@ -4,6 +4,7 @@ import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
 import { measureTool } from "../metrics";
 import { parseJsonInput, toolJson } from "../tools/shared";
 import { getMcpServerConnections, type McpServerConnection } from "./client";
+import { formatMcpToolName } from "./names";
 
 type JsonSchema = {
   type?: string | string[] | undefined;
@@ -46,14 +47,6 @@ function createMcpTool(connection: McpServerConnection, mcpTool: McpTool) {
       schema: jsonSchemaObjectToZod(mcpTool.inputSchema),
     },
   );
-}
-
-function formatMcpToolName(serverName: string, toolName: string) {
-  return `mcp__${sanitizeToolNamePart(serverName)}__${sanitizeToolNamePart(toolName)}`;
-}
-
-function sanitizeToolNamePart(value: string) {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 function jsonSchemaObjectToZod(schema: JsonSchema) {
