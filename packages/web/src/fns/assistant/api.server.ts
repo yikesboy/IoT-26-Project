@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { HumanMessage } from "langchain";
-import agent from "@/agent";
+import { getAgent } from "@/agent";
 import { getMonthlyBudget, saveMonthlyBudget, summarizeTransactions } from "@/agent/budget";
 import { withToolMetrics } from "@/agent/metrics";
 import { getStoredTransactions } from "@/agent/tools";
@@ -43,6 +43,7 @@ export async function sendAgentMessage(
   let result: unknown;
   let toolMetrics;
   try {
+    const agent = await getAgent();
     const measured = await withToolMetrics(async () =>
       agent.invoke(
         {
