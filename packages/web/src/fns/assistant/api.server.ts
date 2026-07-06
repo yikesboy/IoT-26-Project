@@ -3,6 +3,7 @@ import { HumanMessage } from "langchain";
 import { getAgent } from "@/agent";
 import { getMonthlyBudget, saveMonthlyBudget, summarizeTransactions } from "@/agent/budget";
 import { withToolMetrics } from "@/agent/metrics";
+import { getMcpServerStatus } from "@/agent/mcp/client";
 import { getStoredTransactions } from "@/agent/tools";
 import { getOllamaModelMemory, modelTimeoutMs } from "@/agent/model";
 import { listUploadedFiles, saveUploadedFile } from "@/lib/blobs";
@@ -151,4 +152,14 @@ export async function listFinanceSummary(userId: string, month = currentLocalMon
     monthlySpending: summary.spending,
     remainingBudget: summary.remainingBudget,
   });
+}
+
+export async function listMcpStatus() {
+  const servers = await getMcpServerStatus();
+
+  return {
+    enabled: servers.length > 0,
+    servers,
+    restartRequiredForChanges: true as const,
+  };
 }
