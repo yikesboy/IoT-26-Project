@@ -24,6 +24,7 @@ import {
   PanelLeftCloseIcon,
   PanelRightCloseIcon,
   PiggyBankIcon,
+  PlugIcon,
   UserIcon,
 } from "lucide-react";
 
@@ -69,6 +70,14 @@ function AppSidebar() {
                 <Link to={"/"}>
                   <ChartColumnIcon />
                   <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to={"/mcp"}>
+                  <PlugIcon />
+                  <span>MCP Servers</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
