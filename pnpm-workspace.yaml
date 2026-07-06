@@ -50,6 +50,7 @@ catalog:
   vite: ^8.0.14
   zod: ^4.4.3
   '@langchain/core': ^1.1.49
+  "@modelcontextprotocol/sdk": ^1.29.0
 
 catalogMode: strict
 

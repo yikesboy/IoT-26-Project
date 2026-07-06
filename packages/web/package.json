@@ -19,6 +19,7 @@
     "@langchain/langgraph-checkpoint-postgres": "catalog:",
     "@langchain/ollama": "catalog:",
     "@langchain/openai": "catalog:",
+    "@modelcontextprotocol/sdk": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "better-auth": "catalog:",
