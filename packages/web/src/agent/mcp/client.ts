@@ -5,6 +5,7 @@ import {
 } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js";
 import { loadMcpServerConfigs, type McpServerConfig } from "./config";
+import { formatMcpToolName } from "./names";
 
 export type McpServerConnection = {
   name: string;
@@ -13,17 +14,47 @@ export type McpServerConnection = {
   tools: McpTool[];
 };
 
-let connectionsPromise: Promise<McpServerConnection[]> | null = null;
+export type McpServerStatus = {
+  name: string;
+  command: string;
+  args: string[];
+  cwd: string;
+  connected: boolean;
+  error: string | null;
+  tools: Array<{
+    name: string;
+    agentName: string;
+    description: string | null;
+  }>;
+};
+
+type McpServerRecord = {
+  connection: McpServerConnection | null;
+  status: McpServerStatus;
+};
+
+let recordsPromise: Promise<McpServerRecord[]> | null = null;
 
 export function getMcpServerConnections() {
-  connectionsPromise ??= connectConfiguredMcpServers();
-  return connectionsPromise;
+  return getMcpServerRecords().then((records) =>
+    records
+      .map((record) => record.connection)
+      .filter((connection): connection is McpServerConnection => connection !== null),
+  );
 }
 
-async function connectConfiguredMcpServers() {
+export function getMcpServerStatus() {
+  return getMcpServerRecords().then((records) => records.map((record) => record.status));
+}
+
+function getMcpServerRecords() {
+  recordsPromise ??= connectConfiguredMcpServers();
+  return recordsPromise;
+}
+
+async function connectConfiguredMcpServers(): Promise<McpServerRecord[]> {
   const configs = await loadMcpServerConfigs();
-  const connections = await Promise.all(configs.map(connectMcpServer));
-  return connections.filter((connection): connection is McpServerConnection => connection !== null);
+  return Promise.all(configs.map(connectMcpServer));
 }
 
 async function connectMcpServer(config: McpServerConfig) {
@@ -48,15 +79,44 @@ async function connectMcpServer(config: McpServerConfig) {
     await client.connect(transport);
     const { tools } = await client.listTools();
 
-    return {
+    const connection = {
       name: config.name,
       config,
       client,
       tools,
     };
+
+    return {
+      connection,
+      status: {
+        name: config.name,
+        command: config.command,
+        args: config.args,
+        cwd: config.cwd,
+        connected: true,
+        error: null,
+        tools: tools.map((mcpTool) => ({
+          name: mcpTool.name,
+          agentName: formatMcpToolName(config.name, mcpTool.name),
+          description: mcpTool.description ?? null,
+        })),
+      },
+    };
   } catch (error) {
-    console.warn(`[mcp:${config.name}] failed to start: ${errorMessage(error)}`);
-    return null;
+    const message = errorMessage(error);
+    console.warn(`[mcp:${config.name}] failed to start: ${message}`);
+    return {
+      connection: null,
+      status: {
+        name: config.name,
+        command: config.command,
+        args: config.args,
+        cwd: config.cwd,
+        connected: false,
+        error: message,
+        tools: [],
+      },
+    };
   }
 }
 
