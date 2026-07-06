@@ -4,5 +4,7 @@
 node_modules
 *.gen.ts
 .env
+mcp.config.json
+/data/*
 
 *.traineddata
